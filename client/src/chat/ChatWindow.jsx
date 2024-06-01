@@ -1,6 +1,7 @@
 import React from 'react';
 import SenderMessage from './SenderMessage';
 import ReceiverMessage from './ReceiverMessage';
+import BottomNav from './BottomNav';
 
 const ChatWindow = ({ messages }) => {
   return (
@@ -14,6 +15,7 @@ const ChatWindow = ({ messages }) => {
           )}
         </div>
       ))}
+      <BottomNav />
     </div>
   );
 };

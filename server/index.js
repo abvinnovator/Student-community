@@ -4,6 +4,10 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { UserRouter } from './routes/user.js';
+import { ChatRouter } from './routes/chat.js';
+import http from 'http';
+import { Server } from 'socket.io';
+import { Chat } from './models/Chat.js';
 
 dotenv.config();
 
@@ -19,16 +23,55 @@ app.use(cookieParser());
 
 // Routes
 app.use('/auth', UserRouter);
+app.use('/api/chats', ChatRouter);
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log('Connected to MongoDB');
-        // Start server after successful connection
-        app.listen(process.env.PORT, () => {
-            console.log(`Server is running on port ${process.env.PORT}`);
-        });
-    })
-    .catch((error) => {
-        console.error('Error connecting to MongoDB:', error);
+.then(() => {
+    console.log('Connected to MongoDB');
+    
+    // Create HTTP server
+    const server = http.createServer(app);
+
+    // Initialize Socket.IO
+    const io = new Server(server, {
+        cors: {
+            origin: "http://localhost:5173",
+            methods: ["GET", "POST"]
+        }
     });
+
+    // Socket.IO connection event
+    io.on('connection', (socket) => {
+        console.log('a user connected', socket.id);
+
+        // Join a chat room
+        socket.on('joinRoom', ({ chatId }) => {
+            socket.join(chatId);
+            console.log(`User ${socket.id} joined room ${chatId}`);
+        });
+
+        // Handle sending messages
+        socket.on('sendMessage', async ({ chatId, senderId, content }) => {
+            const chat = await Chat.findById(chatId);
+            if (chat) {
+                const message = { sender: senderId, content };
+                chat.messages.push(message);
+                await chat.save();
+                io.to(chatId).emit('message', message);
+            }
+        });
+
+        // Disconnect event
+        socket.on('disconnect', () => {
+            console.log('user disconnected', socket.id);
+        });
+    });
+
+    server.listen(process.env.PORT, () => {
+        console.log(`Server is running on port ${process.env.PORT}`);
+    });
+})
+.catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+});

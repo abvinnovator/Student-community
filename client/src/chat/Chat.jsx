@@ -1,19 +1,53 @@
-import React, { useState } from 'react';
+// Chat.jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import BottomNav from './BottomNav';
 import { useNavigate } from 'react-router-dom';
+import SearchUsers from './SearchUsers';
 
-const Chat = ({ contacts }) => {
+const Chat = () => {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [contacts, setContacts] = useState([]);
 
   const handleUserClick = (contact) => {
-    navigate(`/chat/${contact.name}`);
+    navigate(`/chat/${contact.username}`);
   };
+
+  useEffect(() => {
+    // Fetch the user's profile
+    axios.get("http://localhost:3000/auth/userprofile", { withCredentials: true })
+      .then((res) => {
+        setProfile(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    // Fetch the user's friends
+    axios.get("http://localhost:3000/auth/friends", { withCredentials: true })
+      .then((res) => {
+        setContacts(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-4xl font-bold text-center text-blue-800 mb-12">
-        Chat
-      </h1>
+      <h1 className="text-4xl font-bold text-center text-blue-800 mb-12">Welcome to StudentCommunity</h1>
+     
+      {profile ? (
+        <div>
+          <h1>Hello, {profile.username}!</h1>
+        </div>
+      ) : (
+        <p>Loading...</p>
+      )}
+
+      <SearchUsers onUserClick={handleUserClick} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {contacts.map((contact, index) => (
           <div
@@ -24,12 +58,12 @@ const Chat = ({ contacts }) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <img
-                  src={contact.image}
-                  alt={contact.name}
+                  src="https://via.placeholder.com/150"
+                  alt={contact.username}
                   className="w-12 h-12 rounded-full mr-4 border-4 border-white"
                 />
                 <h2 className="text-xl font-semibold text-blue-800">
-                  {contact.name}
+                  {contact.username}
                 </h2>
               </div>
               <button>
@@ -40,7 +74,7 @@ const Chat = ({ contacts }) => {
                 />
               </button>
             </div>
-            <p className="text-gray-600 text-center">{contact.status}</p>
+            <p className="text-gray-600 text-center">Online</p>
           </div>
         ))}
       </div>

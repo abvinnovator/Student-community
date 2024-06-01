@@ -6,7 +6,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   Axios.defaults.withCredentials = true;
   const handleSubmit = (e) => {
@@ -14,13 +14,15 @@ const Login = () => {
     Axios.post("http://localhost:3000/auth/login", {
       email,
       password,
-    }).then(response => {
-        if(response.data.status) {
-            navigate('/chat')
-        }
-    }).catch(err => {
-        console.log(err)
     })
+      .then((response) => {
+        if (response.data.status) {
+          navigate("/chat");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   return (

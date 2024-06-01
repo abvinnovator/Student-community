@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ChatWindow from './ChatWindow';
 
-const ChatPage = ({ contact }) => {
+const ChatPage = ({ username }) => {
   const [messages, setMessages] = useState([
     { sender: true, text: 'Hey there!' },
     { sender: false, text: 'Hi, how can I help you?' },
@@ -22,7 +22,7 @@ const ChatPage = ({ contact }) => {
       <div className="md:w-1/3 bg-gray-100 p-4">
         <div className="mb-4">
           <h2 className="text-2xl text-center font-bold text-blue-800">
-            Chat with {contact.name}
+            Chat with {username}
           </h2>
         </div>
       </div>

@@ -1,27 +1,68 @@
 import express from "express";
-import bcryt from "bcrypt";
-const router = express.Router();
-import { User } from "../models/User.js";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import dotenv from 'dotenv'
-dotenv.config()
+
+import dotenv from 'dotenv';
+import { User } from "../models/User.js";
+
+dotenv.config();
+const router = express.Router();
+
+// Middleware to verify user
+const verifyUser = async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.json({ status: false, message: "no token" });
+    }
+    const decoded = await jwt.verify(token, process.env.KEY);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.json(err);
+  }
+};
+
+// Get user profile
+router.get('/userprofile', verifyUser, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.user.username }, '-password');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Error retrieving user profile" });
+  }
+});
+
 router.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, currentBranch, gender, yearOfStudy, areasOfInterest, skills,profileTheme } = req.body;
   const user = await User.findOne({ email });
   if (user) {
-    return res.json({ message: "user already existed" });
+    return res.json({ message: "User already exists" });
   }
 
-  const hashpassword = await bcryt.hash(password, 10);
+  const hashPassword = await bcrypt.hash(password, 10);
   const newUser = new User({
     username,
     email,
-    password: hashpassword,
+    password: hashPassword,
+    currentBranch,
+    gender,
+    yearOfStudy,
+    areasOfInterest,
+    skills,
+    profileTheme
   });
 
-  await newUser.save();
-  return res.json({ status: true, message: "record registed" });
+  try {
+    await newUser.save();
+    return res.json({ status: true, message: "User registered successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error registering user" });
+  }
 });
 
 router.post("/login", async (req, res) => {
@@ -31,16 +72,95 @@ router.post("/login", async (req, res) => {
     return res.json({ message: "user is not registered" });
   }
 
-  const validPassword = await bcryt.compare(password, user.password);
+  const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
     return res.json({ message: "password is incorrect" });
   }
 
   const token = jwt.sign({ username: user.username }, process.env.KEY, {
-    expiresIn: "1h",
+    expiresIn: "48h",
   });
-  res.cookie("token", token, { httpOnly: true, maxAge: 360000 });
+  res.cookie("token", token, { httpOnly: true, maxAge: 48 * 60 * 60 * 1000 });
   return res.json({ status: true, message: "login successfully" });
+});
+// Update user profile
+router.put('/userprofile', verifyUser, async (req, res) => {
+  try {
+    const { username, email, currentBranch, areasOfInterest, yearOfStudy, skills, gender } = req.body;
+    const updatedUser = await User.findOneAndUpdate(
+      { username: req.user.username },
+      { username, email, currentBranch, areasOfInterest, yearOfStudy, skills, gender },
+      { new: true }
+    );
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating user profile" });
+  }
+});
+//SEO
+
+router.get('/search', verifyUser, async (req, res) => {
+  const { username } = req.query;
+  try {
+    const users = await User.find({ username: { $regex: username, $options: 'i' } }, '-password');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Error searching for users" });
+  }
+});
+// to view Users profiles
+router.get('/profiles', async (req, res) => {
+  const { username } = req.query;
+  try {
+    if (username) {
+      const user = await User.findOne({ username }, '-password');
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } else {
+      const users = await User.find({}, '-password');
+      res.json(users);
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+//add friends
+router.post('/addfriend', verifyUser, async (req, res) => {
+  const { friendUsername } = req.body;
+  try {
+    const user = await User.findOne({ username: req.user.username });
+    const friend = await User.findOne({ username: friendUsername });
+
+    if (!friend) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.friends.includes(friend._id)) {
+      return res.status(400).json({ message: 'User is already a friend' });
+    }
+
+    user.friends.push(friend._id);
+    await user.save();
+
+    res.json({ message: 'Friend added successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error adding friend' });
+  }
+});
+
+// Get friend list route
+router.get('/friends', verifyUser, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.user.username }).populate('friends', '-password');
+    res.json(user.friends);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving friends' });
+  }
 });
 
 router.post("/forgot-password", async (req, res) => {
@@ -57,13 +177,13 @@ router.post("/forgot-password", async (req, res) => {
     var transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "asaiconnects@gmail.com",
-        pass: "nrar lvxj ghiz fflc"
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
     const encodedToken = encodeURIComponent(token).replace(/\./g, "%2E");
     var mailOptions = {
-      from: "your asaiconnects@gmail.com",
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Reset Password",
       text: `http://localhost:5173/resetPassword/${encodedToken}`,
@@ -87,7 +207,7 @@ router.post("/reset-password/:token", async (req, res) => {
   try {
     const decoded = await jwt.verify(token, process.env.KEY);
     const id = decoded.id;
-    const hashPassword = await bcryt.hash(password, 10);
+    const hashPassword = await bcrypt.hash(password, 10);
     await User.findByIdAndUpdate({ _id: id }, { password: hashPassword });
     return res.json({ status: true, message: "updated password" });
   } catch (err) {
@@ -95,30 +215,13 @@ router.post("/reset-password/:token", async (req, res) => {
   }
 });
 
-const verifyUser = async (req, res, next) => {
-    try {
-      const token = req.cookies.token;
-      if (!token) {
-        return res.json({ status: false, message: "no token" });
-      }
-      const decoded = await jwt.verify(token, process.env.KEY);
-      next()
-  
-    } catch (err) {
-      return res.json(err);
-    }
-  };
-  
-
-
-router.get("/verify",verifyUser, (req, res) => {
-    return res.json({status: true, message: "authorized"})
+router.get("/verify", verifyUser, (req, res) => {
+  return res.json({ status: true, message: "authorized" });
 });
 
 router.get('/logout', (req, res) => {
-    res.clearCookie('token')
-    return res.json({status: true})
-})
-
+  res.clearCookie('token');
+  return res.json({ status: true });
+});
 
 export { router as UserRouter };
