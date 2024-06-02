@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const SearchUsers = () => {
+const SearchUsers = ({ onFriendAdded }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
   const navigate = useNavigate();
@@ -29,6 +29,7 @@ const SearchUsers = () => {
         { withCredentials: true }
       );
       console.log(response.data.message);
+      onFriendAdded();  // Notify parent component
     } catch (error) {
       console.error('Error adding friend:', error);
     }

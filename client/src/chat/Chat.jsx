@@ -1,4 +1,3 @@
-// Chat.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import BottomNav from './BottomNav';
@@ -14,6 +13,16 @@ const Chat = () => {
     navigate(`/chat/${contact.username}`);
   };
 
+  const fetchFriends = () => {
+    axios.get("http://localhost:3000/auth/friends", { withCredentials: true })
+      .then((res) => {
+        setContacts(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   useEffect(() => {
     // Fetch the user's profile
     axios.get("http://localhost:3000/auth/userprofile", { withCredentials: true })
@@ -25,13 +34,7 @@ const Chat = () => {
       });
 
     // Fetch the user's friends
-    axios.get("http://localhost:3000/auth/friends", { withCredentials: true })
-      .then((res) => {
-        setContacts(res.data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    fetchFriends();
   }, []);
 
   return (
@@ -46,7 +49,7 @@ const Chat = () => {
         <p>Loading...</p>
       )}
 
-      <SearchUsers onUserClick={handleUserClick} />
+      <SearchUsers onFriendAdded={fetchFriends} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {contacts.map((contact, index) => (

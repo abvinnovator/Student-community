@@ -129,9 +129,10 @@ router.get('/profiles', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-//add friends
+// Add friend route
 router.post('/addfriend', verifyUser, async (req, res) => {
   const { friendUsername } = req.body;
+
   try {
     const user = await User.findOne({ username: req.user.username });
     const friend = await User.findOne({ username: friendUsername });
@@ -144,12 +145,16 @@ router.post('/addfriend', verifyUser, async (req, res) => {
       return res.status(400).json({ message: 'User is already a friend' });
     }
 
+    // Add each other as friends
     user.friends.push(friend._id);
+    friend.friends.push(user._id);
+
     await user.save();
+    await friend.save();
 
     res.json({ message: 'Friend added successfully' });
   } catch (err) {
-    res.status(500).json({ message: 'Error adding friend' });
+    res.status(500).json({ message: 'Error adding friend', error: err.message });
   }
 });
 
@@ -159,9 +164,10 @@ router.get('/friends', verifyUser, async (req, res) => {
     const user = await User.findOne({ username: req.user.username }).populate('friends', '-password');
     res.json(user.friends);
   } catch (err) {
-    res.status(500).json({ message: 'Error retrieving friends' });
+    res.status(500).json({ message: 'Error retrieving friends', error: err.message });
   }
 });
+
 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
