@@ -60,11 +60,12 @@ const Chat = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <img
-                  src="https://via.placeholder.com/150"
-                  alt={contact.username}
-                  className="w-12 h-12 rounded-full mr-4 border-4 border-white"
-                />
+              <div
+                className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl font-bold mx-4"
+                style={{ backgroundColor: '#de6d6d' }}
+              >
+                <span>{contact.profileTheme}</span>
+              </div>
                 <h2 className="text-xl font-semibold text-blue-800">
                   {contact.username}
                 </h2>

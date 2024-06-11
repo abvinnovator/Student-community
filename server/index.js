@@ -8,6 +8,7 @@ import { ChatRouter } from './routes/chat.js';
 import http from 'http';
 import { Server } from 'socket.io';
 import { Chat } from './models/Chat.js';
+import { PostRouter } from './routes/post.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(cookieParser());
 
 // Routes
 app.use('/auth', UserRouter);
+app.use('/api/post',PostRouter)
 app.use('/api/chats', ChatRouter);
 
 // Database connection

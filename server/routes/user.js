@@ -81,7 +81,7 @@ router.post("/login", async (req, res) => {
     expiresIn: "48h",
   });
   res.cookie("token", token, { httpOnly: true, maxAge: 48 * 60 * 60 * 1000 });
-  return res.json({ status: true, message: "login successfully" });
+  return res.json({ status: true, message: "login successfully", token: token });
 });
 // Update user profile
 router.put('/userprofile', verifyUser, async (req, res) => {
@@ -229,5 +229,5 @@ router.get('/logout', (req, res) => {
   res.clearCookie('token');
   return res.json({ status: true });
 });
-
+export {verifyUser};
 export { router as UserRouter };
