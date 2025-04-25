@@ -6,34 +6,52 @@ const SearchUsers = ({ onFriendAdded }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
   const navigate = useNavigate();
+   
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    
     try {
-      const response = await axios.get(`http://localhost:3000/auth/search?username=${searchTerm}`, { withCredentials: true });
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:3000/auth/search?username=${searchTerm}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log("Search response data:", response);
       setResults(response.data);
     } catch (error) {
       console.error('Error searching users:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+        console.log(error)
+      }
     }
   };
 
   const handleViewProfile = (username) => {
     navigate(`/profile/${username}`);
   };
-
   const handleAddFriend = async (username) => {
     try {
+      const token = localStorage.getItem('token');
+  
       const response = await axios.post(
         'http://localhost:3000/auth/addfriend',
-        { friendUsername: username },
-        { withCredentials: true }
+        { friendUsername: username }, // request body
+        {
+          headers: { Authorization: `Bearer ${token}` } // headers go here
+        }
       );
+  
       console.log(response.data.message);
       onFriendAdded();  // Notify parent component
     } catch (error) {
       console.error('Error adding friend:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
+  
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">

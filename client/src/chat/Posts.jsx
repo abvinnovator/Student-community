@@ -5,21 +5,38 @@ import BottomNav from './BottomNav';
 
 const CreatePost = () => {
   const [formData, setFormData] = useState({
-    imgUrl: '',
     title: '',
-    desc: ''
+    desc: '',
   });
+  const [imageFile, setImageFile] = useState(null);
 
   const navigate = useNavigate();
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
+  const handleFileChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-     const response= await axios.post('http://localhost:3000/api/post/createposts', formData, { withCredentials: true }); 
+      const data = new FormData();
+      data.append('title', formData.title);
+      data.append('desc', formData.desc);
+      data.append('image', imageFile); // The key name 'image' should match what your backend expects
+
+      const response = await axios.post(
+        'http://localhost:3000/api/post/createposts',
+        data,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true,
+        }
+      );
+
       console.log(response.data);
       navigate('/getposts');
     } catch (error) {
@@ -32,14 +49,13 @@ const CreatePost = () => {
       <h2 className="text-3xl font-bold mb-8">Create Post</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Image URL:</label>
+          <label className="block text-sm font-medium text-gray-700">Select Image:</label>
           <input
-            type="text"
-            name="imgUrl"
-            value={formData.imgUrl}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="Enter image URL"
+            type="file"
+            name="image"
+            onChange={handleFileChange}
+            className="mt-1 block w-full text-sm text-gray-700"
+            accept="image/*"
           />
         </div>
         <div>
@@ -74,6 +90,6 @@ const CreatePost = () => {
       <BottomNav />
     </div>
   );
-}
+};
 
 export default CreatePost;

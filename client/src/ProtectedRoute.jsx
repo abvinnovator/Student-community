@@ -1,11 +1,17 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import Cookies from 'js-cookie';
 
 const ProtectedRoute = () => {
-  const token = document.cookie.split('; ').find(row => row.startsWith('token='));
+  const token = Cookies.get('token');
+  console.log('Token:', token);
   const isAuthenticated = !!token;
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/login" replace />;
+  // }
+
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

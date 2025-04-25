@@ -14,6 +14,12 @@ import UserProfile from './chat/UserProfile';
 import GridPattern from './GridPattern';
 import GetPost from './Posts/GetPost';
 import Groups from './chat/community/Groups';
+import CommunityPage from './components/pages/CommunityPage';
+import Educational from './components/pages/Educational';
+import Mentorship from './components/pages/Mentorship';
+import Networking from './components/pages/Networking';
+import Resource from './components/pages/Resource';
+import Skills from './components/pages/Skills';
 
 const App = () => {
   return (
@@ -33,6 +39,12 @@ const App = () => {
         
         <Route path='/groups' element={<Groups />} />
         <Route path='/grid' element={<GridPattern />} />
+        <Route path='/communitypage' element={<CommunityPage />} />
+        <Route path='/educational' element={<Educational />} />
+        <Route path='/mentorship' element={<Mentorship />} />
+        <Route path='/networking' element={<Networking />} />
+        <Route path='/resource' element={<Resource />} />
+        <Route path='/skills' element={<Skills />} />
       </Routes>
     </Router>
   );

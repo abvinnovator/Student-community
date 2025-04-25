@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import BottomNav from './BottomNav';
-import axios from 'axios';
+import axios from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
-
-
 
 const MyProfile = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true); 
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -17,13 +15,12 @@ const MyProfile = () => {
     areasOfInterest: '',
     yearOfStudy: '',
     skills: '',
-    gender:''
-  }); 
+    gender: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3000/auth/userprofile', { withCredentials: true })
+    axios.get('/auth/userprofile')
       .then((res) => {
         setProfile(res.data);
         setFormData({
@@ -38,8 +35,11 @@ const MyProfile = () => {
       })
       .catch((err) => {
         setError(err.message);
+        if (err.response?.status === 401) {
+          navigate('/login');
+        }
       });
-  }, []);
+  }, [navigate]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,236 +49,97 @@ const MyProfile = () => {
     setEditMode(!editMode);
   };
 
-  const handlePhotoUpload = (e) => {
-    // Handle photo upload logic
-    console.log(e.target.files[0]);
-  };
-  //update logic
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put('http://localhost:3000/auth/userprofile', formData, {
-        withCredentials: true,
-      });
+      const response = await axios.put('/auth/userprofile', formData);
       if (response.data) {
         setProfile(response.data);
         setEditMode(false);
       }
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
-  const handleLogout = () => {
-   
-    localStorage.removeItem('token');
-    setIsLoggedIn(false);
-    navigate('/'); 
+
+  const handleLogout = async () => {
+    try {
+      await axios.get('/auth/logout');
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Still remove token and redirect even if server request fails
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
   };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      <div className="bg-white rounded-lg shadow-md p-6 w-full mb-20">
-        <header className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">My Profile</h1>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={handleEditMode}
-          >
-            {editMode ? 'Cancel' : 'Edit'}
-          </button>
-          <div className="flex justify-end mb-4">
-        {isLoggedIn && (
-          <button
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        )}
-      </div>
-        </header>
-        {error && <p className="text-red-500 mb-4">Error: {error}</p>}
-        {profile ? (
-          <div>
-            <div className="relative mb-8">
-              <div
-                className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-white text-4xl font-bold mx-auto"
-                style={{ backgroundColor: '#de6d6d' }}
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 flex flex-col items-center py-10">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+        <header className="flex items-center justify-between mb-6">
+          <h1 className="text-4xl font-bold text-gray-900">My Profile</h1>
+          <div className="flex gap-3">
+            {isLoggedIn && (
+              <button
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors"
+                onClick={handleLogout}
               >
-                <span>{profile.profileTheme}</span>
-              </div>
-              <label
-                htmlFor="photo-upload"
-                className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full cursor-pointer"
-              >
-                <i className="fas fa-camera"></i>
-              </label>
-              <input
-                id="photo-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoUpload}
-              />
-            </div>
-            {/*SUBMMITING FORM TO UPADTE WHEN IT WAS IN EDITMODE */}
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label
-                  htmlFor="username"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Username:
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Email:
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="currentBranch"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Current Branch:
-                </label>
-                <input
-                  type="text"
-                  id="currentBranch"
-                  name="currentBranch"
-                  value={formData.currentBranch}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="YOS"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Year of Study:
-                </label>
-                <input
-                  type="number"
-                  id="yos"
-                  name="yearofstudy"
-                  value={formData.yearOfStudy}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="AOS"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Areas of Interest:
-                </label>
-                <input
-                  type="text"
-                  id="aos"
-                  name="areasofinterest"
-                  value={formData.areasOfInterest}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="AOS"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Gender:
-                </label>
-                <input
-                  type="text"
-                  id="gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="AOS"
-                  className="text-gray-700 font-bold block mb-2"
-                >
-                  Skills:
-                </label>
-                <input
-                  type="text"
-                  id="skills"
-                  name="skills"
-                  value={formData.skills}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  className={`w-full px-4 py-2 rounded-md border ${
-                    editMode
-                      ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500'
-                      : 'border-gray-300 bg-gray-100'
-                  }`}
-                />
-              </div>
-              {editMode && (
-              <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-                Save Changes
+                Logout
               </button>
             )}
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors"
+              onClick={handleEditMode}
+            >
+              {editMode ? 'Cancel' : 'Edit'}
+            </button>
+          </div>
+        </header>
+
+        {error && <p className="text-red-600 mb-4">Error: {error}</p>}
+
+        {profile ? (
+          <div>
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-40 h-40 rounded-full bg-gray-400 flex items-center justify-center text-white text-5xl font-bold overflow-hidden">
+                <img
+                  src="https://via.placeholder.com/150"
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {Object.keys(formData).map((key) => (
+                <div key={key} className="flex flex-col">
+                  <label className="text-gray-800 font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</label>
+                  <input
+                    type="text"
+                    name={key}
+                    value={formData[key]}
+                    onChange={handleInputChange}
+                    disabled={!editMode}
+                    className={`px-4 py-3 rounded-md border focus:ring-2 transition-all duration-200 ${editMode ? 'border-blue-600 focus:ring-blue-300' : 'border-gray-400 bg-gray-200'}`}
+                  />
+                </div>
+              ))}
+              {editMode && (
+                <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-md w-full mt-4 transition-colors">
+                  Save Changes
+                </button>
+              )}
             </form>
-            
           </div>
         ) : (
-          <p className="text-gray-700">Loading...</p>
+          <p className="text-gray-700 text-center">Loading...</p>
         )}
       </div>
       <BottomNav />

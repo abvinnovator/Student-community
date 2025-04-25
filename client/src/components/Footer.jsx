@@ -1,79 +1,63 @@
 import React from 'react';
+import { FaTwitter, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 
 const Footer = () => {
   return (
-    <footer className="bg-zinc-500 text-white py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+          
+          {/* About Section */}
           <div>
-            <h3 className="text-lg font-bold mb-4">About</h3>
-            <p className="text-gray-400">
-              StudentCommunity is a collaborative platform designed to empower students like you by fostering skill development, knowledge sharing, and networking opportunities.
+            <h3 className="text-xl font-semibold mb-4">About</h3>
+            <p className="text-gray-300 leading-relaxed">
+              StudentCommunity is a collaborative platform designed to empower students by fostering skill development, knowledge sharing, and networking opportunities.
             </p>
           </div>
+
+          {/* Useful Links */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Useful Links</h3>
-            <ul className="text-gray-400">
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Home
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  About
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Resources
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Contact
-                </a>
-              </li>
+            <h3 className="text-xl font-semibold mb-4">Useful Links</h3>
+            <ul className="text-gray-400 space-y-2">
+              {['Home', 'About', 'Resources', 'Contact'].map((link, index) => (
+                <li key={index}>
+                  <a href="#" className="hover:text-gray-200 transition duration-300">
+                    {link}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Social Media Links */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Connect</h3>
-            <ul className="text-gray-400">
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Twitter
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Facebook
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  Instagram
-                </a>
-              </li>
-              <li className="mb-2">
-                <a href="#" className="hover:text-white">
-                  LinkedIn
-                </a>
-              </li>
-            </ul>
+            <h3 className="text-xl font-semibold mb-4">Connect</h3>
+            <div className="flex justify-center md:justify-start space-x-4">
+              <a href="#" className="p-2 rounded-full bg-gray-700 hover:bg-blue-500 transition duration-300">
+                <FaTwitter size={20} />
+              </a>
+              <a href="#" className="p-2 rounded-full bg-gray-700 hover:bg-blue-600 transition duration-300">
+                <FaFacebookF size={20} />
+              </a>
+              <a href="#" className="p-2 rounded-full bg-gray-700 hover:bg-pink-500 transition duration-300">
+                <FaInstagram size={20} />
+              </a>
+              <a href="#" className="p-2 rounded-full bg-gray-700 hover:bg-blue-700 transition duration-300">
+                <FaLinkedinIn size={20} />
+              </a>
+            </div>
           </div>
         </div>
-        <div className="mt-8 border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400">&copy; {new Date().getFullYear()} StudentCommunity. All rights reserved.</p>
-          <ul className="flex mt-4 md:mt-0">
-            <li className="ml-4">
-              <a href="#" className="text-gray-400 hover:text-white">
-                Privacy Policy
-              </a>
+
+        {/* Footer Bottom Section */}
+        <div className="mt-10 border-t border-gray-700 pt-6 flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
+          <p>&copy; {new Date().getFullYear()} StudentCommunity. All rights reserved.</p>
+          <ul className="flex space-x-6 mt-4 md:mt-0">
+            <li>
+              <a href="#" className="hover:text-white transition duration-300">Privacy Policy</a>
             </li>
-            <li className="ml-4">
-              <a href="#" className="text-gray-400 hover:text-white">
-                Terms of Use
-              </a>
+            <li>
+              <a href="#" className="hover:text-white transition duration-300">Terms of Use</a>
             </li>
           </ul>
         </div>

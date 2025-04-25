@@ -11,7 +11,6 @@ import { Chat } from './models/Chat.js';
 import { PostRouter } from './routes/post.js';
 
 dotenv.config();
-
 const app = express();
 
 // Middleware
@@ -24,56 +23,69 @@ app.use(cookieParser());
 
 // Routes
 app.use('/auth', UserRouter);
-app.use('/api/post',PostRouter)
-app.use('/api/chats', ChatRouter);
+app.use('/api/post', PostRouter);
+app.use('/api/chats', ChatRouter); // Ensure API prefix is consistent
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => {
-    console.log('Connected to MongoDB');
-    
-    // Create HTTP server
-    const server = http.createServer(app);
+    .then(() => {
+        console.log('Connected to MongoDB');
 
-    // Initialize Socket.IO
-    const io = new Server(server, {
-        cors: {
-            origin: "http://localhost:5173",
-            methods: ["GET", "POST"]
-        }
-    });
+        // Create HTTP server
+        const server = http.createServer(app);
 
-    // Socket.IO connection event
-    io.on('connection', (socket) => {
-        console.log('a user connected', socket.id);
-
-        // Join a chat room
-        socket.on('joinRoom', ({ chatId }) => {
-            socket.join(chatId);
-            console.log(`User ${socket.id} joined room ${chatId}`);
-        });
-
-        // Handle sending messages
-        socket.on('sendMessage', async ({ chatId, senderId, content }) => {
-            const chat = await Chat.findById(chatId);
-            if (chat) {
-                const message = { sender: senderId, content };
-                chat.messages.push(message);
-                await chat.save();
-                io.to(chatId).emit('message', message);
+        // Initialize Socket.IO
+        const io = new Server(server, {
+            cors: {
+                origin: "http://localhost:5173",
+                methods: ["GET", "POST"],
+                credentials: true
             }
         });
 
-        // Disconnect event
-        socket.on('disconnect', () => {
-            console.log('user disconnected', socket.id);
-        });
-    });
+        // Socket.IO connection event
+        io.on('connection', (socket) => {
+            console.log('A user connected:', socket.id);
 
-    server.listen(process.env.PORT, () => {
-        console.log(`Server is running on port ${process.env.PORT}`);
+            // Join a chat room
+            socket.on('joinRoom', ({ chatId }) => {
+                socket.join(chatId);
+                console.log(`User ${socket.id} joined room ${chatId}`);
+            });
+
+            // Handle sending messages
+            socket.on('sendMessage', async ({ chatId, senderId, content }) => {
+                try {
+                    const chat = await Chat.findById(chatId);
+                    if (chat) {
+                        const message = { sender: senderId, content };
+                        chat.messages.push(message);
+                        await chat.save();
+                        io.to(chatId).emit('message', message);
+                    }
+                } catch (error) {
+                    console.error("Error sending message:", error);
+                }
+            });
+
+            // Disconnect event
+            socket.on('disconnect', () => {
+                console.log('User disconnected:', socket.id);
+            });
+        });
+
+        // Start the server with error handling
+        const PORT = process.env.PORT || 3000;
+        server.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        }).on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.error(`Port ${PORT} is already in use.`);
+            } else {
+                console.error('Error starting server:', err);
+            }
+        });
+    })
+    .catch((error) => {
+        console.error('Error connecting to MongoDB:', error);
     });
-})
-.catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-});
