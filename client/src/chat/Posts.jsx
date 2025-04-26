@@ -23,27 +23,40 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+  
       const data = new FormData();
       data.append('title', formData.title);
       data.append('desc', formData.desc);
-      data.append('image', imageFile); // The key name 'image' should match what your backend expects
-
+      if (imageFile) {
+        data.append('image', imageFile);
+      }
+  
       const response = await axios.post(
         'http://localhost:3000/api/post/createposts',
         data,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          withCredentials: true,
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          },
+          withCredentials: true
         }
       );
-
-      console.log(response.data);
+  
+      console.log('Post created:', response.data);
       navigate('/getposts');
     } catch (error) {
       console.error('Failed to create post:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
-
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <h2 className="text-3xl font-bold mb-8">Create Post</h2>

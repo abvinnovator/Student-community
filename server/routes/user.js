@@ -12,15 +12,28 @@ const router = express.Router();
 // Middleware to verify user
 const verifyUser = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
-      return res.json({ status: false, message: "no token" });
+      return res.status(401).json({ status: false, message: "No token provided" });
     }
+    
     const decoded = await jwt.verify(token, process.env.KEY);
-    req.user = decoded;
+    if (!decoded || !decoded._id) {
+      return res.status(401).json({ status: false, message: "Invalid token" });
+    }
+
+    // Get the full user object from database
+    const user = await User.findById(decoded._id);
+    if (!user) {
+      return res.status(401).json({ status: false, message: "User not found" });
+    }
+
+    // Attach the full user object to the request
+    req.user = user;
     next();
   } catch (err) {
-    return res.json(err);
+    console.error('Auth error:', err);
+    return res.status(401).json({ status: false, message: "Authentication failed" });
   }
 };
 
@@ -38,30 +51,43 @@ router.get('/userprofile', verifyUser, async (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  const { username, email, password, currentBranch, gender, yearOfStudy, areasOfInterest, skills,profileTheme } = req.body;
-  const user = await User.findOne({ email });
-  if (user) {
-    return res.json({ message: "User already exists" });
-  }
-
-  const hashPassword = await bcrypt.hash(password, 10);
-  const newUser = new User({
-    username,
-    email,
-    password: hashPassword,
-    currentBranch,
-    gender,
-    yearOfStudy,
-    areasOfInterest,
-    skills,
-    profileTheme
-  });
-
+  const { username, email, password, currentBranch, gender, yearOfStudy, areasOfInterest, skills, profileTheme } = req.body;
+  
   try {
+    console.log("Signup attempt for:", email); // Log the attempt
+    
+    const user = await User.findOne({ email });
+    if (user) {
+      console.log("User already exists:", email);
+      return res.status(400).json({ status: false, message: "User already exists" });
+    }
+
+    const hashPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      username,
+      email,
+      password: hashPassword,
+      currentBranch,
+      gender,
+      yearOfStudy,
+      areasOfInterest,
+      skills,
+      profileTheme
+    });
+
+    // Validate before saving
+    await newUser.validate();
+    
     await newUser.save();
+    console.log("User registered successfully:", email);
     return res.json({ status: true, message: "User registered successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Error registering user" });
+    console.error("Signup error:", error);
+    return res.status(500).json({ 
+      status: false, 
+      message: "Error registering user",
+      error: error.message // Include the error message
+    });
   }
 });
 
@@ -69,19 +95,36 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
-    return res.json({ message: "user is not registered" });
+    return res.status(401).json({ message: "user is not registered" });
   }
 
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
-    return res.json({ message: "password is incorrect" });
+    return res.status(401).json({ message: "password is incorrect" });
   }
 
-  const token = jwt.sign({ username: user.username }, process.env.KEY, {
-    expiresIn: "48h",
+  const token = jwt.sign(
+    { 
+      username: user.username,
+      _id: user._id,
+      email: user.email
+    }, 
+    process.env.KEY, 
+    {
+      expiresIn: "48h",
+    }
+  );
+
+  return res.json({ 
+    status: true, 
+    message: "login successfully", 
+    token: token,
+    user: {
+      _id: user._id,
+      username: user.username,
+      email: user.email
+    }
   });
-  res.cookie("token", token, { httpOnly: true, maxAge: 48 * 60 * 60 * 1000 });
-  return res.json({ status: true, message: "login successfully", token: token });
 });
 // Update user profile
 router.put('/userprofile', verifyUser, async (req, res) => {
@@ -145,7 +188,6 @@ router.post('/addfriend', verifyUser, async (req, res) => {
       return res.status(400).json({ message: 'User is already a friend' });
     }
 
-    // Add each other as friends
     user.friends.push(friend._id);
     friend.friends.push(user._id);
 
@@ -226,8 +268,7 @@ router.get("/verify", verifyUser, (req, res) => {
 });
 
 router.get('/logout', (req, res) => {
-  res.clearCookie('token');
-  return res.json({ status: true });
+  return res.json({ status: true, message: "Logged out successfully" });
 });
 export {verifyUser};
 export { router as UserRouter };
